@@ -45,12 +45,18 @@ def load_split(split: str) -> list[dict]:
         return [json.loads(l) for l in f]
 
 
-def apply_chat_template(examples: dict, tokenizer) -> dict:
-    texts = [
-        tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=False)
-        for msgs in examples["messages"]
-    ]
-    return {"text": texts}
+def tokenize_dataset(dataset: Dataset, tokenizer, max_length: int) -> Dataset:
+    """Apply chat template + tokenize. Sets labels = input_ids for causal LM."""
+    def process(examples):
+        texts = [
+            tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=False)
+            for msgs in examples["messages"]
+        ]
+        tok = tokenizer(texts, truncation=True, max_length=max_length, padding=False)
+        tok["labels"] = [ids[:] for ids in tok["input_ids"]]
+        return tok
+
+    return dataset.map(process, batched=True, remove_columns=["messages"])
 
 
 # ── LoRA config ────────────────────────────────────────────────────────────────
@@ -92,22 +98,13 @@ def train(args):
     tokenizer.padding_side = "right"
 
     # ── datasets ──────────────────────────────────────────────────────────────
-    train_raw = Dataset.from_list(load_split("train"))
-    val_raw   = Dataset.from_list(load_split("validation"))
-
-    train_ds = train_raw.map(
-        lambda ex: apply_chat_template(ex, tokenizer),
-        batched=True, remove_columns=["messages"],
-    )
-    val_ds = val_raw.map(
-        lambda ex: apply_chat_template(ex, tokenizer),
-        batched=True, remove_columns=["messages"],
-    )
+    train_ds = tokenize_dataset(Dataset.from_list(load_split("train")),      tokenizer, args.max_length)
+    val_ds   = tokenize_dataset(Dataset.from_list(load_split("validation")), tokenizer, args.max_length)
 
     # ── model ─────────────────────────────────────────────────────────────────
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torch_dtype=torch.float16,   # fp16 for V100 compatibility
+        dtype=torch.float16,         # fp16 for V100 compatibility
         device_map="auto",
         trust_remote_code=True,
     )
@@ -117,7 +114,9 @@ def train(args):
     model = get_peft_model(model, lora_cfg)
     model.print_trainable_parameters()
 
-    # ── training args (SFTConfig = TrainingArguments + SFT-specific args) ─────
+    # ── training args ─────────────────────────────────────────────────────────
+    # Use SFTConfig but pass no SFT-specific fields — dataset is pre-tokenized
+    # so SFTTrainer behaves like a plain Trainer.
     training_args = SFTConfig(
         output_dir=adapter_dir,
         num_train_epochs=args.epochs,
@@ -139,9 +138,6 @@ def train(args):
         save_total_limit=2,
         seed=42,
         dataloader_num_workers=0,
-        # SFT-specific
-        dataset_text_field="text",
-        max_seq_length=args.max_length,
     )
 
     # ── train ─────────────────────────────────────────────────────────────────
