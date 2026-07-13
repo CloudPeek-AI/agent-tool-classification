@@ -19,7 +19,7 @@ conda activate "${TEACHER_ENV}" 2>/dev/null || true
 
 echo "Installing into: $(command -v python) (${TEACHER_ENV})"
 
-pip install --upgrade scikit-learn evaluate accelerate datasets trl peft
+pip install --upgrade scikit-learn evaluate accelerate datasets trl peft bitsandbytes
 
 echo "---"
-python -c "import sklearn, evaluate, accelerate, datasets, trl, peft; print('OK: scikit-learn', sklearn.__version__, '| evaluate', evaluate.__version__, '| accelerate', accelerate.__version__, '| datasets', datasets.__version__, '| trl', trl.__version__, '| peft', peft.__version__)"
+python -c "import sklearn, evaluate, accelerate, datasets, trl, peft; print('OK | scikit-learn', sklearn.__version__, '| evaluate', evaluate.__version__, '| accelerate', accelerate.__version__, '| datasets', datasets.__version__, '| trl', trl.__version__, '| peft', peft.__version__)"
