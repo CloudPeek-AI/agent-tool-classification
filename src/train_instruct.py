@@ -29,7 +29,7 @@ import torch
 from datasets import Dataset
 from peft import LoraConfig, TaskType, get_peft_model
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
-from trl import DataCollatorForCompletionOnlyLM, SFTTrainer
+from trl import SFTTrainer
 
 # ── paths ──────────────────────────────────────────────────────────────────────
 ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -117,20 +117,6 @@ def train(args):
     model = get_peft_model(model, lora_cfg)
     model.print_trainable_parameters()
 
-    # ── completion-only collator (train on assistant reply only) ───────────────
-    # Find the assistant turn start token sequence from the chat template.
-    # We apply the template to a dummy exchange and locate the response prefix.
-    dummy = tokenizer.apply_chat_template(
-        [{"role": "user", "content": "x"}, {"role": "assistant", "content": "y"}],
-        tokenize=False, add_generation_prompt=False,
-    )
-    # The response prefix is the text just before "y" in the dummy template.
-    response_prefix = dummy.split("y")[0].split("x")[-1]
-    collator = DataCollatorForCompletionOnlyLM(
-        response_template=response_prefix,
-        tokenizer=tokenizer,
-    )
-
     # ── training args ─────────────────────────────────────────────────────────
     training_args = TrainingArguments(
         output_dir=adapter_dir,
@@ -161,7 +147,6 @@ def train(args):
         args=training_args,
         train_dataset=train_ds,
         eval_dataset=val_ds,
-        data_collator=collator,
         dataset_text_field="text",
         max_seq_length=args.max_length,
     )
