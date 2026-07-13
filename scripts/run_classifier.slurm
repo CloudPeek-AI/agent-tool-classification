@@ -28,6 +28,7 @@ mkdir -p "${LOGDIR:-logs}"
 : "${MODEL:?MODEL not set — submit via scripts/submit_classifier.sh}"
 
 source scripts/_env.sh
+export WANDB_DISABLED=true
 
 echo "model=${MODEL} | lr=${LR:-default} | batch=${BATCH_SIZE:-default} | epochs=${EPOCHS:-15} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
 

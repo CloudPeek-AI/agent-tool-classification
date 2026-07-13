@@ -158,6 +158,7 @@ def train(args):
         seed=42,
         fp16=torch.cuda.is_available(),
         dataloader_num_workers=0,
+        dataloader_pin_memory=torch.cuda.is_available(),
     )
 
     trainer = Trainer(

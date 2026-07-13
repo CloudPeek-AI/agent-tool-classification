@@ -26,6 +26,7 @@ mkdir -p "${LOGDIR:-logs}"
 : "${MODEL:?MODEL not set — submit via scripts/submit_instruct.sh}"
 
 source scripts/_env.sh
+export WANDB_DISABLED=true
 
 echo "model=${MODEL} | lr=${LR:-2e-4} | lora_r=${LORA_R:-16} | batch=${BATCH_SIZE:-4} | grad_accum=${GRAD_ACCUM:-4} | epochs=${EPOCHS:-5} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
 
