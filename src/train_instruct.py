@@ -28,8 +28,8 @@ import time
 import torch
 from datasets import Dataset
 from peft import LoraConfig, TaskType, get_peft_model
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
-from trl import SFTTrainer
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from trl import SFTConfig, SFTTrainer
 
 # ── paths ──────────────────────────────────────────────────────────────────────
 ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -117,8 +117,8 @@ def train(args):
     model = get_peft_model(model, lora_cfg)
     model.print_trainable_parameters()
 
-    # ── training args ─────────────────────────────────────────────────────────
-    training_args = TrainingArguments(
+    # ── training args (SFTConfig = TrainingArguments + SFT-specific args) ─────
+    training_args = SFTConfig(
         output_dir=adapter_dir,
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
@@ -126,7 +126,7 @@ def train(args):
         gradient_accumulation_steps=args.grad_accum,
         learning_rate=args.lr,
         weight_decay=0.01,
-        warmup_ratio=0.05,
+        warmup_steps=50,
         lr_scheduler_type="cosine",
         fp16=True,
         eval_strategy="epoch",
@@ -139,6 +139,9 @@ def train(args):
         save_total_limit=2,
         seed=42,
         dataloader_num_workers=0,
+        # SFT-specific
+        dataset_text_field="text",
+        max_seq_length=args.max_length,
     )
 
     # ── train ─────────────────────────────────────────────────────────────────
@@ -147,8 +150,6 @@ def train(args):
         args=training_args,
         train_dataset=train_ds,
         eval_dataset=val_ds,
-        dataset_text_field="text",
-        max_seq_length=args.max_length,
     )
 
     t0 = time.time()
