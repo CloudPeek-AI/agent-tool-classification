@@ -143,7 +143,7 @@ def train(args):
         per_device_eval_batch_size=args.batch_size * 2,
         learning_rate=args.lr,
         weight_decay=args.weight_decay,
-        warmup_ratio=0.1,
+        warmup_steps=50,
         lr_scheduler_type="cosine",
 
         eval_strategy="epoch",
@@ -165,7 +165,7 @@ def train(args):
         args=training_args,
         train_dataset=tokenized["train"],
         eval_dataset=tokenized["validation"],
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         data_collator=collator,
         compute_metrics=make_compute_metrics(ID2LABEL),
         callbacks=[EarlyStoppingCallback(early_stopping_patience=args.patience)],
