@@ -77,7 +77,10 @@ def evaluate(args):
 
     # ── load tokenizer (for chat template) ────────────────────────────────────
     from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained(args.merged_dir, trust_remote_code=True)
+    merged_dir = os.path.abspath(args.merged_dir)
+    tokenizer = AutoTokenizer.from_pretrained(
+        merged_dir, trust_remote_code=True, local_files_only=True,
+    )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -89,7 +92,7 @@ def evaluate(args):
     # ── vLLM inference ─────────────────────────────────────────────────────────
     print(f"Loading model with vLLM ({len(prompts)} test examples)...")
     llm = LLM(
-        model=args.merged_dir,
+        model=merged_dir,
         dtype="float16",          # fp16 for V100 compatibility
         max_model_len=args.max_model_len,
         gpu_memory_utilization=args.gpu_mem_util,
