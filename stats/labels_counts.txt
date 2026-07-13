@@ -1,0 +1,35 @@
+============================================================
+RAW DATASET TASK BREAKDOWN (all 3 source files combined)
+============================================================
+  16827  total records
+   7151  summarisation
+   7137  extraction
+   2539  tool_calling
+
+============================================================
+PROCESSED DATASET — LABEL COUNTS (7 categories, 1288 total)
+============================================================
+   250  FINDING_RETRIEVAL
+   250  LOG_RETRIEVAL
+   213  KNOWLEDGE_BASE_SEARCH
+   176  ASSET_INVENTORY
+   159  EXPLOIT_RESEARCH
+   150  MEMORY_CONTEXT_SEARCH
+    90  VULNERABILITY_ENRICHMENT
+
+Note: FINDING_RETRIEVAL and LOG_RETRIEVAL are capped at 250.
+
+============================================================
+SPLIT BREAKDOWN (stratified 70 / 10 / 20, seed=42)
+============================================================
+Label                      Train   Val   Test  | Total
+----------------------------------------------------------
+FINDING_RETRIEVAL            175    25     50  |   250
+LOG_RETRIEVAL                175    25     50  |   250
+KNOWLEDGE_BASE_SEARCH        149    21     43  |   213
+ASSET_INVENTORY              123    18     35  |   176
+EXPLOIT_RESEARCH             111    16     32  |   159
+MEMORY_CONTEXT_SEARCH        105    15     30  |   150
+VULNERABILITY_ENRICHMENT      63     9     18  |    90
+----------------------------------------------------------
+TOTAL                        901   129    258  |  1288
