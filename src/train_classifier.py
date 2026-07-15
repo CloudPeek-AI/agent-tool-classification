@@ -217,6 +217,7 @@ def train(args):
     }
 
     results_path = os.path.join(result_dir, "test_results.json")
+    os.makedirs(result_dir, exist_ok=True)
     with open(results_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {results_path}")
