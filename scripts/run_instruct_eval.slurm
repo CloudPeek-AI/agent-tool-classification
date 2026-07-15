@@ -21,6 +21,12 @@ mkdir -p "${LOGDIR:-logs}"
 
 source scripts/_env.sh
 
+# Force all HuggingFace components to load from local files only.
+# Without this, AutoConfig (called internally by AutoTokenizer) tries to
+# validate the local path as a HF repo ID and fails.
+export TRANSFORMERS_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
+
 echo "merged_dir=${MERGED_DIR} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
 
 python src/evaluate_instruct.py \

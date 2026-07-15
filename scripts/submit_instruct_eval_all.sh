@@ -13,7 +13,8 @@ LOGDIR="${LOGDIR:-logs}"
 mkdir -p "$LOGDIR"
 
 shopt -s nullglob
-merged_dirs=(outputs/instruct/*/merged)
+SCRATCH_OUTPUTS="${SCRATCH_OUTPUTS:-/scratch/hpc/41/dolamull/instruct_outputs}"
+merged_dirs=(outputs/instruct/*/merged "${SCRATCH_OUTPUTS}"/*/merged)
 
 if [ "${#merged_dirs[@]}" -eq 0 ]; then
   echo "No merged model directories found under outputs/instruct/*/merged" >&2
