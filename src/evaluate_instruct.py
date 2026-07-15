@@ -20,9 +20,10 @@ from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from vllm import LLM, SamplingParams
 
 # ── paths ──────────────────────────────────────────────────────────────────────
-ROOT     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(ROOT, "data", "processed_enhanced", "instruct")
+ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR    = os.path.join(ROOT, "data", "processed_enhanced", "instruct")
 LABEL_MAP_PATH = os.path.join(ROOT, "data", "processed_enhanced", "label_map.json")
+RESULTS_DIR = os.path.join(ROOT, "results")
 
 with open(LABEL_MAP_PATH) as f:
     _lmap = json.load(f)
@@ -165,8 +166,10 @@ def evaluate(args):
         ],
     }
 
-    out_path = os.path.join(args.merged_dir, "..", "eval_results.json")
-    out_path = os.path.normpath(out_path)
+    model_slug = os.path.basename(os.path.dirname(os.path.normpath(args.merged_dir)))
+    result_dir = os.path.join(RESULTS_DIR, model_slug)
+    os.makedirs(result_dir, exist_ok=True)
+    out_path = os.path.join(result_dir, "eval_results.json")
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {out_path}")
