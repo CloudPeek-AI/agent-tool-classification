@@ -160,7 +160,8 @@ def train(args):
         report_to="none",
         save_total_limit=2,
         seed=42,
-        fp16=torch.cuda.is_available(),
+        bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
+        fp16=torch.cuda.is_available() and not torch.cuda.is_bf16_supported(),
         dataloader_num_workers=0,
         dataloader_pin_memory=torch.cuda.is_available(),
     )
