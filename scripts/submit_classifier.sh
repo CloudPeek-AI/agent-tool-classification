@@ -34,6 +34,7 @@ cd "$(dirname "$0")/.."   # repo root, so src/* and scripts/* paths resolve
 LOGDIR="${LOGDIR:-logs}"
 EPOCHS="${EPOCHS:-15}"
 PATIENCE="${PATIENCE:-3}"
+DATA_DIR="${DATA_DIR:-data/processed_enhanced/classifier}"
 
 MODELS=("$@")
 [ "${#MODELS[@]}" -eq 0 ] && { echo "Usage: $0 <preset> [<preset>...]  (presets: bert roberta electra modernbert deberta all)" >&2; exit 1; }
@@ -79,7 +80,7 @@ submit_one() {
   echo ">>> $preset | $model | lr=$lr | batch=$batch | mem=$mem"
 
   if [ "${DRY_RUN:-0}" = "1" ]; then
-    echo "    DRY_RUN: would submit -> outputs/${slug}_lr${lr}_bs${batch}_ep${EPOCHS}/"
+    echo "    DRY_RUN: would submit -> results/${slug}/ (data: ${DATA_DIR})"
     return 0
   fi
 
@@ -87,20 +88,20 @@ submit_one() {
   job_id=$(sbatch --parsable \
     --job-name="classifier-${preset}" \
     --partition=gpu-short \
-    --gres=gpu:1 \
+    --gres=gpu:nvidia_h200_nvl:1 \
     --time=12:00:00 \
     --mem="$mem" \
     --cpus-per-task=4 \
     --output="${LOGDIR}/classifier_${preset}_%j.out" \
     --error="${LOGDIR}/classifier_${preset}_%j.err" \
-    --export=ALL,MODEL="$model",LR="$lr",BATCH_SIZE="$batch",EPOCHS="$EPOCHS",PATIENCE="$PATIENCE",LOGDIR="$LOGDIR" \
+    --export=ALL,MODEL="$model",LR="$lr",BATCH_SIZE="$batch",EPOCHS="$EPOCHS",PATIENCE="$PATIENCE",LOGDIR="$LOGDIR",DATA_DIR="$DATA_DIR" \
     scripts/run_classifier.slurm)
 
   echo "    submitted job $job_id -> outputs/${slug}_lr${lr}_bs${batch}_ep${EPOCHS}/"
 }
 
 mkdir -p "$LOGDIR"
-echo "partition=gpu-short gres=gpu:1 time=12:00:00 | models: ${MODELS[*]} | logs: $LOGDIR/"
+echo "partition=gpu-short gres=gpu:nvidia_h200_nvl:1 time=12:00:00 | models: ${MODELS[*]} | data: $DATA_DIR | logs: $LOGDIR/"
 echo
 
 for m in "${MODELS[@]}"; do

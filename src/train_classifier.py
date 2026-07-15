@@ -38,22 +38,13 @@ from transformers import (
 
 # ── paths ──────────────────────────────────────────────────────────────────────
 ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR    = os.path.join(ROOT, "data", "processed", "classifier")
-LABEL_MAP   = os.path.join(ROOT, "data", "processed", "label_map.json")
 OUTPUTS_DIR = os.path.join(ROOT, "outputs")
-
-# ── label map ──────────────────────────────────────────────────────────────────
-with open(LABEL_MAP) as f:
-    _lmap = json.load(f)
-LABEL2ID = _lmap["label2id"]
-ID2LABEL = {int(k): v for k, v in _lmap["id2label"].items()}
-NUM_LABELS = len(LABEL2ID)
-
+RESULTS_DIR = os.path.join(ROOT, "results")
 
 # ── data loading ───────────────────────────────────────────────────────────────
 
-def load_split(split: str) -> Dataset:
-    path = os.path.join(DATA_DIR, f"{split}.jsonl")
+def load_split(split: str, data_dir: str) -> Dataset:
+    path = os.path.join(data_dir, f"{split}.jsonl")
     records = []
     with open(path) as f:
         for line in f:
@@ -62,11 +53,11 @@ def load_split(split: str) -> Dataset:
     return Dataset.from_list(records)
 
 
-def load_datasets() -> DatasetDict:
+def load_datasets(data_dir: str) -> DatasetDict:
     return DatasetDict({
-        "train":      load_split("train"),
-        "validation": load_split("validation"),
-        "test":       load_split("test"),
+        "train":      load_split("train",      data_dir),
+        "validation": load_split("validation", data_dir),
+        "test":       load_split("test",       data_dir),
     })
 
 
@@ -100,24 +91,37 @@ def make_compute_metrics(id2label):
 # ── training ───────────────────────────────────────────────────────────────────
 
 def train(args):
+    # ── resolve data dir and label map ────────────────────────────────────────
+    data_dir  = os.path.abspath(args.data_dir)
+    label_map = os.path.join(os.path.dirname(data_dir), "label_map.json")
+    with open(label_map) as f:
+        _lmap = json.load(f)
+    label2id   = _lmap["label2id"]
+    id2label   = {int(k): v for k, v in _lmap["id2label"].items()}
+    num_labels = len(label2id)
+
     model_slug = args.model.replace("/", "__")
     run_name   = f"{model_slug}_lr{args.lr}_bs{args.batch_size}_ep{args.epochs}"
     output_dir = os.path.join(OUTPUTS_DIR, run_name)
+    result_dir = os.path.join(RESULTS_DIR, model_slug)
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(result_dir, exist_ok=True)
 
     print(f"\n{'='*70}")
-    print(f"  Model  : {args.model}")
-    print(f"  LR     : {args.lr}")
-    print(f"  Batch  : {args.batch_size}")
-    print(f"  Epochs : {args.epochs}")
-    print(f"  Output : {output_dir}")
+    print(f"  Model    : {args.model}")
+    print(f"  Data dir : {data_dir}")
+    print(f"  LR       : {args.lr}")
+    print(f"  Batch    : {args.batch_size}")
+    print(f"  Epochs   : {args.epochs}")
+    print(f"  Output   : {output_dir}")
+    print(f"  Results  : {result_dir}")
     print(f"{'='*70}\n")
 
     # ── tokenizer & model ──────────────────────────────────────────────────────
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     max_length = min(args.max_length, tokenizer.model_max_length)
 
-    raw = load_datasets()
+    raw = load_datasets(data_dir)
     tokenized = raw.map(
         lambda b: tokenize(b, tokenizer, max_length),
         batched=True,
@@ -127,9 +131,9 @@ def train(args):
 
     model = AutoModelForSequenceClassification.from_pretrained(
         args.model,
-        num_labels=NUM_LABELS,
-        id2label=ID2LABEL,
-        label2id=LABEL2ID,
+        num_labels=num_labels,
+        id2label=id2label,
+        label2id=label2id,
         ignore_mismatched_sizes=True,
     )
 
@@ -168,7 +172,7 @@ def train(args):
         eval_dataset=tokenized["validation"],
         processing_class=tokenizer,
         data_collator=collator,
-        compute_metrics=make_compute_metrics(ID2LABEL),
+        compute_metrics=make_compute_metrics(id2label),
         callbacks=[EarlyStoppingCallback(early_stopping_patience=args.patience)],
     )
 
@@ -184,7 +188,7 @@ def train(args):
     preds  = np.argmax(test_preds_out.predictions, axis=-1)
     labels = test_preds_out.label_ids
 
-    label_names = [ID2LABEL[i] for i in range(NUM_LABELS)]
+    label_names = [id2label[i] for i in range(num_labels)]
     report = classification_report(labels, preds, target_names=label_names, digits=4)
     cm     = confusion_matrix(labels, preds)
 
@@ -205,13 +209,13 @@ def train(args):
         "test_weighted_f1": round(f1_score(labels, preds, average="weighted", zero_division=0), 4),
         "per_class_f1":   {
             name: round(f1_score(labels == i, preds == i, average="binary", zero_division=0), 4)
-            for i, name in ID2LABEL.items()
+            for i, name in id2label.items()
         },
         "classification_report": report,
         "confusion_matrix": cm.tolist(),
     }
 
-    results_path = os.path.join(output_dir, "test_results.json")
+    results_path = os.path.join(result_dir, "test_results.json")
     with open(results_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {results_path}")
@@ -230,6 +234,11 @@ def train(args):
 def parse_args():
     parser = argparse.ArgumentParser(description="Train an encoder-only classifier")
 
+    parser.add_argument(
+        "--data_dir", type=str,
+        default=os.path.join(ROOT, "data", "processed_enhanced", "classifier"),
+        help="Path to the classifier dataset directory (must contain train/validation/test.jsonl and ../label_map.json)",
+    )
     parser.add_argument(
         "--model", type=str, default="microsoft/deberta-v3-base",
         help=(
