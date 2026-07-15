@@ -31,6 +31,12 @@ mkdir -p "${LOGDIR:-logs}"
 source scripts/_env.sh
 export WANDB_DISABLED=true
 
+# DeBERTa-v3 JIT-compiles a CUDA kernel via NVRTC for its relative position
+# encoding. The system libnvrtc-builtins may not match PyTorch's CUDA build,
+# so prepend PyTorch's own bundled lib directory to LD_LIBRARY_PATH.
+TORCH_LIB=$(python -c "import torch, os; print(os.path.join(os.path.dirname(torch.__file__), 'lib'))")
+export LD_LIBRARY_PATH="${TORCH_LIB}:${LD_LIBRARY_PATH:-}"
+
 echo "model=${MODEL} | data=${DATA_DIR:-default} | lr=${LR:-default} | batch=${BATCH_SIZE:-default} | epochs=${EPOCHS:-15} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
 
 python src/train_classifier.py \
