@@ -34,7 +34,7 @@ from trl import SFTConfig, SFTTrainer
 # ── paths ──────────────────────────────────────────────────────────────────────
 ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR    = os.path.join(ROOT, "data", "processed_enhanced", "instruct")
-OUTPUTS_DIR = os.path.join(ROOT, "outputs", "instruct")
+OUTPUTS_DIR = os.path.join(ROOT, "outputs", "instruct")   # default; override via --outputs_dir
 
 
 # ── data ───────────────────────────────────────────────────────────────────────
@@ -77,7 +77,8 @@ def make_lora_config(r: int, alpha: int, dropout: float) -> LoraConfig:
 def train(args):
     model_slug = args.model.replace("/", "__")
     run_name   = f"{model_slug}_lr{args.lr}_r{args.lora_r}_ep{args.epochs}"
-    output_dir = os.path.join(OUTPUTS_DIR, run_name)
+    outputs_base = args.outputs_dir if args.outputs_dir else OUTPUTS_DIR
+    output_dir = os.path.join(outputs_base, run_name)
     adapter_dir = os.path.join(output_dir, "adapter")
     merged_dir  = os.path.join(output_dir, "merged")
     os.makedirs(output_dir, exist_ok=True)
@@ -193,6 +194,9 @@ def parse_args():
     parser.add_argument("--grad_accum",  type=int,   default=4,  help="Gradient accumulation steps (effective batch = batch_size * grad_accum)")
     parser.add_argument("--epochs",      type=int,   default=5)
     parser.add_argument("--max_length",  type=int,   default=512)
+    parser.add_argument("--outputs_dir", type=str,   default=None,
+                        help="Base directory for adapter/merged output (default: outputs/instruct). "
+                             "Set to scratch path to avoid storage quota issues.")
     return parser.parse_args()
 
 

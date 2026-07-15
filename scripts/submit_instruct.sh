@@ -41,6 +41,7 @@ EPOCHS="${EPOCHS:-5}"
 LORA_R="${LORA_R:-16}"
 LORA_ALPHA="${LORA_ALPHA:-32}"
 GRAD_ACCUM="${GRAD_ACCUM:-4}"
+OUTPUTS_DIR="${OUTPUTS_DIR:-/scratch/hpc/41/dolamull/instruct_outputs}"
 
 MODELS=("$@")
 [ "${#MODELS[@]}" -eq 0 ] && { echo "Usage: $0 <preset> [<preset>...]  (presets: qwen7b qwen3b llama3b llama1b phi mistral gemma all)" >&2; exit 1; }
@@ -84,7 +85,7 @@ submit_one() {
   local batch="${BATCH_SIZE:-$P_BATCH_SIZE}"
   local mem="${MEM:-$P_MEM}"
   local model_slug; model_slug=$(echo "$model" | sed 's#/#__#g')
-  local merged_dir="${PWD}/outputs/instruct/${model_slug}_lr${lr}_r${LORA_R}_ep${EPOCHS}/merged"
+  local merged_dir="${OUTPUTS_DIR}/${model_slug}_lr${lr}_r${LORA_R}_ep${EPOCHS}/merged"
 
   echo ">>> $preset | $model | lr=$lr | lora_r=$LORA_R | batch=$batch | grad_accum=$GRAD_ACCUM | mem=$mem"
 
@@ -104,7 +105,7 @@ submit_one() {
     --cpus-per-task=4 \
     --output="${LOGDIR}/instruct_train_${preset}_%j.out" \
     --error="${LOGDIR}/instruct_train_${preset}_%j.err" \
-    --export=ALL,MODEL="$model",LR="$lr",LORA_R="$LORA_R",LORA_ALPHA="$LORA_ALPHA",BATCH_SIZE="$batch",GRAD_ACCUM="$GRAD_ACCUM",EPOCHS="$EPOCHS",LOGDIR="$LOGDIR" \
+    --export=ALL,MODEL="$model",LR="$lr",LORA_R="$LORA_R",LORA_ALPHA="$LORA_ALPHA",BATCH_SIZE="$batch",GRAD_ACCUM="$GRAD_ACCUM",EPOCHS="$EPOCHS",LOGDIR="$LOGDIR",OUTPUTS_DIR="$OUTPUTS_DIR" \
     scripts/run_instruct_train.slurm)
   echo "    training job: $train_id"
 

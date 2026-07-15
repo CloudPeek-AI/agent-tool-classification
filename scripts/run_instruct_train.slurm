@@ -12,6 +12,7 @@
 # Env vars exported from submit_instruct.sh:
 #
 #   MODEL        HuggingFace model ID (required)
+#   OUTPUTS_DIR  base dir for adapter/merged output (default: scratch)
 #   LR           learning rate            (default: 2e-4)
 #   LORA_R       LoRA rank                (default: 16)
 #   LORA_ALPHA   LoRA alpha               (default: 32)
@@ -28,13 +29,18 @@ mkdir -p "${LOGDIR:-logs}"
 source scripts/_env.sh
 export WANDB_DISABLED=true
 
-echo "model=${MODEL} | lr=${LR:-2e-4} | lora_r=${LORA_R:-16} | batch=${BATCH_SIZE:-4} | grad_accum=${GRAD_ACCUM:-4} | epochs=${EPOCHS:-5} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
+# Default outputs to scratch to avoid storage quota issues with large merged models.
+OUTPUTS_DIR="${OUTPUTS_DIR:-/scratch/hpc/41/dolamull/instruct_outputs}"
+mkdir -p "${OUTPUTS_DIR}"
+
+echo "model=${MODEL} | outputs=${OUTPUTS_DIR} | lr=${LR:-2e-4} | lora_r=${LORA_R:-16} | batch=${BATCH_SIZE:-4} | grad_accum=${GRAD_ACCUM:-4} | epochs=${EPOCHS:-5} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
 
 python src/train_instruct.py \
-    --model      "${MODEL}" \
-    --lr         "${LR:-2e-4}" \
-    --lora_r     "${LORA_R:-16}" \
-    --lora_alpha "${LORA_ALPHA:-32}" \
-    --batch_size "${BATCH_SIZE:-4}" \
-    --grad_accum "${GRAD_ACCUM:-4}" \
-    --epochs     "${EPOCHS:-5}"
+    --model        "${MODEL}" \
+    --lr           "${LR:-2e-4}" \
+    --lora_r       "${LORA_R:-16}" \
+    --lora_alpha   "${LORA_ALPHA:-32}" \
+    --batch_size   "${BATCH_SIZE:-4}" \
+    --grad_accum   "${GRAD_ACCUM:-4}" \
+    --epochs       "${EPOCHS:-5}" \
+    --outputs_dir  "${OUTPUTS_DIR}"
