@@ -33,7 +33,7 @@ from trl import SFTConfig, SFTTrainer
 
 # ── paths ──────────────────────────────────────────────────────────────────────
 ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR    = os.path.join(ROOT, "data", "processed", "instruct")
+DATA_DIR    = os.path.join(ROOT, "data", "processed_enhanced", "instruct")
 OUTPUTS_DIR = os.path.join(ROOT, "outputs", "instruct")
 
 

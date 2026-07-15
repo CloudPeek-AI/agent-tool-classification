@@ -21,8 +21,8 @@ from vllm import LLM, SamplingParams
 
 # ── paths ──────────────────────────────────────────────────────────────────────
 ROOT     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(ROOT, "data", "processed", "instruct")
-LABEL_MAP_PATH = os.path.join(ROOT, "data", "processed", "label_map.json")
+DATA_DIR = os.path.join(ROOT, "data", "processed_enhanced", "instruct")
+LABEL_MAP_PATH = os.path.join(ROOT, "data", "processed_enhanced", "label_map.json")
 
 with open(LABEL_MAP_PATH) as f:
     _lmap = json.load(f)
