@@ -102,7 +102,7 @@ def evaluate(args):
 
     sampling_params = SamplingParams(
         temperature=0.0,    # greedy — deterministic classification
-        max_tokens=10,      # label names are short (longest is 24 chars)
+        max_tokens=20,      # label names are short (longest is ~25 chars / ~7 tokens)
         stop=["\n", "<|eot_id|>", "<|im_end|>", "</s>"],
     )
 

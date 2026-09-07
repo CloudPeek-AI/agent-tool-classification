@@ -7,29 +7,37 @@ RAW DATASET TASK BREAKDOWN (all 3 source files combined)
    2539  tool_calling
 
 ============================================================
-PROCESSED DATASET — LABEL COUNTS (7 categories, 1288 total)
+PROCESSED DATASET — LABEL COUNTS (8 categories, 2500 total)
 ============================================================
-   250  FINDING_RETRIEVAL
-   250  LOG_RETRIEVAL
+   569  AWS_SECURITY_HUB_FINDINGS
+   568  NO_TOOL
+   502  LOG_RETRIEVAL
    213  KNOWLEDGE_BASE_SEARCH
-   176  ASSET_INVENTORY
+   177  DEVICE_IDENTITY_INVENTORY
+   162  ENDPOINT_SECURITY_CHECK
    159  EXPLOIT_RESEARCH
    150  MEMORY_CONTEXT_SEARCH
-    90  VULNERABILITY_ENRICHMENT
 
-Note: FINDING_RETRIEVAL and LOG_RETRIEVAL are capped at 250.
+Notes:
+  AWS_SECURITY_HUB_FINDINGS capped at 569 (1176 available).
+  NO_TOOL capped at 568 (3791 confirmed real examples available).
+  All other classes use their full natural counts.
+  Max/min class ratio: 3.8:1 (vs 12.7:1 in the previous scheme).
+  NO_TOOL records are drawn from real followup_flows summarisation
+  records confirmed to have no tool execution — no synthetic data used.
 
 ============================================================
 SPLIT BREAKDOWN (stratified 70 / 10 / 20, seed=42)
 ============================================================
-Label                      Train   Val   Test  | Total
-----------------------------------------------------------
-FINDING_RETRIEVAL            175    25     50  |   250
-LOG_RETRIEVAL                175    25     50  |   250
-KNOWLEDGE_BASE_SEARCH        149    21     43  |   213
-ASSET_INVENTORY              123    18     35  |   176
-EXPLOIT_RESEARCH             111    16     32  |   159
-MEMORY_CONTEXT_SEARCH        105    15     30  |   150
-VULNERABILITY_ENRICHMENT      63     9     18  |    90
-----------------------------------------------------------
-TOTAL                        901   129    258  |  1288
+Label                        Train   Val   Test  | Total
+------------------------------------------------------------
+AWS_SECURITY_HUB_FINDINGS      398    57    114  |   569
+NO_TOOL                         398    57    113  |   568
+LOG_RETRIEVAL                   351    50    101  |   502
+KNOWLEDGE_BASE_SEARCH           149    21     43  |   213
+DEVICE_IDENTITY_INVENTORY       124    18     35  |   177
+ENDPOINT_SECURITY_CHECK         113    16     33  |   162
+EXPLOIT_RESEARCH                111    16     32  |   159
+MEMORY_CONTEXT_SEARCH           105    15     30  |   150
+------------------------------------------------------------
+TOTAL                          1749   250    501  |  2500
