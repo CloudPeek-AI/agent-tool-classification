@@ -16,8 +16,16 @@ shopt -s nullglob
 SCRATCH_OUTPUTS="${SCRATCH_OUTPUTS:-/scratch/hpc/41/dolamull/instruct_outputs}"
 merged_dirs=(outputs/instruct/*/merged "${SCRATCH_OUTPUTS}"/*/merged)
 
+# Warn about run dirs that exist but have no merged/ subdir (e.g. training failed before merge).
+for run_dir in outputs/instruct/*/ "${SCRATCH_OUTPUTS}"/*/; do
+  [ -d "$run_dir" ] || continue
+  if [ ! -d "${run_dir}merged" ]; then
+    echo "WARNING: no merged/ dir found in $run_dir — skipping (training may not have completed)" >&2
+  fi
+done
+
 if [ "${#merged_dirs[@]}" -eq 0 ]; then
-  echo "No merged model directories found under outputs/instruct/*/merged" >&2
+  echo "No merged model directories found under outputs/instruct/*/merged or ${SCRATCH_OUTPUTS}/*/merged" >&2
   exit 1
 fi
 
@@ -28,7 +36,12 @@ done
 echo
 
 for merged in "${merged_dirs[@]}"; do
-  abs_merged="$PWD/$merged"
+  # Resolve to absolute path — scratch paths are already absolute, local ones are relative.
+  if [[ "$merged" = /* ]]; then
+    abs_merged="$merged"
+  else
+    abs_merged="$PWD/$merged"
+  fi
   run_name="$(basename "$(dirname "$merged")")"
 
   echo ">>> $run_name"
