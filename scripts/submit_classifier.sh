@@ -54,11 +54,11 @@ MODELS=("${expanded[@]}")
 # Sets: P_MODEL, P_LR, P_BATCH_SIZE, P_MEM (host RAM)
 resolve_model() {
   case "$1" in
-    bert)       P_MODEL="bert-base-uncased";                  P_LR="2e-5"; P_BATCH_SIZE=16; P_MEM=16G ;;
-    roberta)    P_MODEL="roberta-base";                       P_LR="2e-5"; P_BATCH_SIZE=16; P_MEM=16G ;;
-    electra)    P_MODEL="google/electra-base-discriminator";  P_LR="3e-5"; P_BATCH_SIZE=32; P_MEM=16G ;;
-    modernbert) P_MODEL="answerdotai/ModernBERT-base";        P_LR="5e-5"; P_BATCH_SIZE=32; P_MEM=16G ;;
-    deberta)    P_MODEL="microsoft/deberta-v3-base";          P_LR="1e-5"; P_BATCH_SIZE=16; P_MEM=24G ;;
+    bert)       P_MODEL="bert-base-uncased";                  P_LR="2e-5"; P_BATCH_SIZE=2; P_MEM=16G ;;
+    roberta)    P_MODEL="roberta-base";                       P_LR="2e-5"; P_BATCH_SIZE=2; P_MEM=16G ;;
+    electra)    P_MODEL="google/electra-base-discriminator";  P_LR="3e-5"; P_BATCH_SIZE=2; P_MEM=16G ;;
+    modernbert) P_MODEL="answerdotai/ModernBERT-base";        P_LR="5e-5"; P_BATCH_SIZE=2; P_MEM=16G ;;
+    deberta)    P_MODEL="microsoft/deberta-v3-base";          P_LR="1e-5"; P_BATCH_SIZE=2; P_MEM=24G ;;
     *) return 1 ;;
   esac
   return 0
