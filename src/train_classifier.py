@@ -19,6 +19,22 @@ import json
 import os
 import time
 
+# ── load .env for WANDB_API_KEY ────────────────────────────────────────────────
+def _load_dotenv(path: str) -> None:
+    """Minimal .env loader — sets os.environ for KEY=VALUE lines."""
+    try:
+        with open(path) as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, val = line.partition("=")
+                key = key.strip()
+                val = val.strip().strip('"').strip("'")
+                os.environ.setdefault(key, val)
+    except FileNotFoundError:
+        pass
+
 import numpy as np
 import torch
 from datasets import Dataset, DatasetDict
@@ -38,6 +54,7 @@ from transformers import (
 
 # ── paths ──────────────────────────────────────────────────────────────────────
 ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_load_dotenv(os.path.join(ROOT, ".env"))
 OUTPUTS_DIR = os.path.join(ROOT, "outputs")
 RESULTS_DIR = os.path.join(ROOT, "results")
 
@@ -147,17 +164,20 @@ def train(args):
         per_device_eval_batch_size=args.batch_size * 2,
         learning_rate=args.lr,
         weight_decay=args.weight_decay,
-        warmup_steps=50,
+        warmup_steps=10,
         lr_scheduler_type="cosine",
 
-        eval_strategy="epoch",
-        save_strategy="epoch",
+        eval_strategy="steps",
+        eval_steps=50,
+        save_strategy="steps",
+        save_steps=50,
         load_best_model_at_end=True,
         metric_for_best_model="macro_f1",
         greater_is_better=True,
 
         logging_steps=20,
-        report_to="none",
+        run_name=run_name,
+        report_to="wandb",
         save_total_limit=2,
         seed=42,
         bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
@@ -228,6 +248,21 @@ def train(args):
     tokenizer.save_pretrained(best_dir)
     print(f"Best model saved to {best_dir}")
 
+    # ── finish wandb run ───────────────────────────────────────────────────────
+    try:
+        import wandb
+        if wandb.run is not None:
+            wandb.log({
+                f"test/{k}": v for k, v in {
+                    "accuracy":    results["test_accuracy"],
+                    "macro_f1":    results["test_macro_f1"],
+                    "weighted_f1": results["test_weighted_f1"],
+                }.items()
+            })
+            wandb.finish()
+    except ImportError:
+        pass
+
     return results
 
 
@@ -253,11 +288,11 @@ def parse_args():
         ),
     )
     parser.add_argument("--lr",           type=float, default=2e-5,  help="Peak learning rate")
-    parser.add_argument("--batch_size",   type=int,   default=16,    help="Per-device train batch size")
+    parser.add_argument("--batch_size",   type=int,   default=2,    help="Per-device train batch size")
     parser.add_argument("--epochs",       type=int,   default=15,    help="Max training epochs")
     parser.add_argument("--weight_decay", type=float, default=0.01,  help="AdamW weight decay")
     parser.add_argument("--max_length",   type=int,   default=256,   help="Max token length (texts avg ~80 tokens)")
-    parser.add_argument("--patience",     type=int,   default=3,     help="Early stopping patience (epochs)")
+    parser.add_argument("--patience",     type=int,   default=5,     help="Early stopping patience (epochs)")
 
     return parser.parse_args()
 
