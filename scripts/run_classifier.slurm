@@ -36,7 +36,7 @@ export WANDB_DISABLED=true
 # Disabling nvFuser forces standard (unfused) CUDA ops — no NVRTC needed.
 export PYTORCH_NVFUSER_DISABLE=1
 
-echo "model=${MODEL} | data=${DATA_DIR:-default} | lr=${LR:-default} | batch=${BATCH_SIZE:-default} | epochs=${EPOCHS:-15} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
+echo "model=${MODEL} | data=${DATA_DIR:-default} | lr=${LR:-default} | batch=${BATCH_SIZE:-2} | epochs=${EPOCHS:-15} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
 
 python src/train_classifier.py \
     --model      "${MODEL}" \
