@@ -5,7 +5,7 @@
 #   bash scripts/rebuild_env.sh
 #
 # What it does:
-#   1. Loads miniforge module
+#   1. Clears stale Cargo cache from home dir (quota fix)
 #   2. Removes the existing prefix env
 #   3. Creates a fresh Python 3.11 env at the same path
 #   4. Installs PyTorch (CUDA 12.1 bundled wheel) + all project deps
@@ -16,6 +16,7 @@ cd "$(dirname "$0")/.."   # repo root
 TEACHER_ENV="${TEACHER_ENV:-/storage/hpc/41/dolamull/envs/teacher}"
 MINIFORGE_MODULE="${MODULE_MINIFORGE:-miniforge/20251003}"
 PYTHON_VERSION="3.11"
+SCRATCH_CACHE="/scratch/hpc/41/dolamull/.cache"
 
 # ── 1. Load conda ──────────────────────────────────────────────────────────────
 set +u
@@ -30,17 +31,26 @@ echo "  Rebuilding conda env at: ${TEACHER_ENV}"
 echo "  Python                 : ${PYTHON_VERSION}"
 echo "========================================================================"
 
-# ── 2. Remove old env ──────────────────────────────────────────────────────────
+# ── 2. Free home-dir quota: remove stale Cargo cache (caused quota failure) ───
+STALE_CARGO="${HOME}/.cache/puccinialin/cargo"
+if [ -d "${STALE_CARGO}" ]; then
+    echo "[1/5] Removing stale cargo cache from home (~/.cache/puccinialin/cargo)..."
+    rm -rf "${STALE_CARGO}"
+else
+    echo "[1/5] No stale cargo cache found in home, skipping."
+fi
+
+# ── 3. Remove old env ──────────────────────────────────────────────────────────
 if [ -d "${TEACHER_ENV}" ]; then
-    echo "[1/4] Removing corrupted env..."
+    echo "[2/5] Removing corrupted env..."
     conda deactivate 2>/dev/null || true
     conda env remove -p "${TEACHER_ENV}" -y
 else
-    echo "[1/4] No existing env found at ${TEACHER_ENV}, skipping removal."
+    echo "[2/5] No existing env found at ${TEACHER_ENV}, skipping removal."
 fi
 
-# ── 3. Create fresh env ────────────────────────────────────────────────────────
-echo "[2/4] Creating fresh env (Python ${PYTHON_VERSION})..."
+# ── 4. Create fresh env ────────────────────────────────────────────────────────
+echo "[3/5] Creating fresh env (Python ${PYTHON_VERSION})..."
 conda create -p "${TEACHER_ENV}" python="${PYTHON_VERSION}" -y
 
 export PATH="${TEACHER_ENV}/bin:${PATH}"
@@ -48,12 +58,20 @@ conda activate "${TEACHER_ENV}" 2>/dev/null || true
 
 echo "      Python: $(python --version) @ $(command -v python)"
 
-# ── 4. Install PyTorch (bundles CUDA 12.1 — no system cuda module needed) ─────
-echo "[3/4] Installing PyTorch..."
+# ── 5. Install PyTorch (bundles CUDA 12.1 — no system cuda module needed) ─────
+echo "[4/5] Installing PyTorch..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# ── 5. Install all project dependencies ───────────────────────────────────────
-echo "[4/4] Installing project dependencies..."
+# ── 6. Install all project dependencies ───────────────────────────────────────
+echo "[5/5] Installing project dependencies..."
+
+# Redirect Cargo/Rust build caches to scratch so they don't exhaust the
+# home-directory quota. vllm pulls in llguidance which builds with maturin/Rust.
+export CARGO_HOME="${CARGO_HOME:-${SCRATCH_CACHE}/cargo}"
+export RUSTUP_HOME="${RUSTUP_HOME:-${SCRATCH_CACHE}/rustup}"
+mkdir -p "${CARGO_HOME}" "${RUSTUP_HOME}"
+echo "      CARGO_HOME=${CARGO_HOME}"
+
 pip install \
     "transformers>=4.40.0" \
     "datasets>=2.18.0" \
@@ -75,17 +93,17 @@ echo "  Smoke test"
 echo "========================================================================"
 python - <<'EOF'
 import torch, transformers, datasets, accelerate, sklearn, evaluate, trl, peft, wandb, bitsandbytes, vllm, huggingface_hub
-print(f"torch          {torch.__version__}  (CUDA available: {torch.cuda.is_available()})")
-print(f"transformers   {transformers.__version__}")
-print(f"datasets       {datasets.__version__}")
-print(f"accelerate     {accelerate.__version__}")
-print(f"scikit-learn   {sklearn.__version__}")
-print(f"evaluate       {evaluate.__version__}")
-print(f"trl            {trl.__version__}")
-print(f"peft           {peft.__version__}")
-print(f"wandb          {wandb.__version__}")
-print(f"bitsandbytes   {bitsandbytes.__version__}")
-print(f"vllm           {vllm.__version__}")
+print(f"torch           {torch.__version__}  (CUDA available: {torch.cuda.is_available()})")
+print(f"transformers    {transformers.__version__}")
+print(f"datasets        {datasets.__version__}")
+print(f"accelerate      {accelerate.__version__}")
+print(f"scikit-learn    {sklearn.__version__}")
+print(f"evaluate        {evaluate.__version__}")
+print(f"trl             {trl.__version__}")
+print(f"peft            {peft.__version__}")
+print(f"wandb           {wandb.__version__}")
+print(f"bitsandbytes    {bitsandbytes.__version__}")
+print(f"vllm            {vllm.__version__}")
 print(f"huggingface-hub {huggingface_hub.__version__}")
 print("ALL OK")
 EOF
