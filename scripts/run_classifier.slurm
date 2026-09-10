@@ -31,6 +31,10 @@ mkdir -p "${LOGDIR:-logs}"
 source scripts/_env.sh
 export WANDB_DISABLED=true
 
+# Checkpoints go to scratch to avoid storage quota errors during torch.save()
+export OUTPUTS_DIR="${OUTPUTS_DIR:-/scratch/hpc/41/dolamull/classifier_outputs}"
+mkdir -p "${OUTPUTS_DIR}"
+
 # DeBERTa-v3's relative position kernel triggers PyTorch's nvFuser JIT, which
 # requires libnvrtc-builtins.so that may not be on the cluster's LD path.
 # Disabling nvFuser forces standard (unfused) CUDA ops — no NVRTC needed.
@@ -39,11 +43,12 @@ export PYTORCH_NVFUSER_DISABLE=1
 echo "model=${MODEL} | data=${DATA_DIR:-default} | lr=${LR:-default} | batch=${BATCH_SIZE:-2} | epochs=${EPOCHS:-15} | node=$(hostname) | gpu=${CUDA_VISIBLE_DEVICES:-?}"
 
 python src/train_classifier.py \
-    --model      "${MODEL}" \
-    --epochs     "${EPOCHS:-15}" \
-    --patience   "${PATIENCE:-3}" \
-    --max_length "${MAX_LENGTH:-256}" \
+    --model       "${MODEL}" \
+    --epochs      "${EPOCHS:-15}" \
+    --patience    "${PATIENCE:-3}" \
+    --max_length  "${MAX_LENGTH:-256}" \
     --weight_decay "${WEIGHT_DECAY:-0.01}" \
+    --outputs_dir "${OUTPUTS_DIR}" \
     ${DATA_DIR:+--data_dir   "${DATA_DIR}"} \
     ${LR:+--lr          "${LR}"} \
     ${BATCH_SIZE:+--batch_size "${BATCH_SIZE}"}

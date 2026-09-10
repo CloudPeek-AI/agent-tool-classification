@@ -119,7 +119,7 @@ def train(args):
 
     model_slug = args.model.replace("/", "__")
     run_name   = f"{model_slug}_lr{args.lr}_bs{args.batch_size}_ep{args.epochs}"
-    output_dir = os.path.join(OUTPUTS_DIR, run_name)
+    output_dir = os.path.join(args.outputs_dir, run_name)
     result_dir = os.path.join(RESULTS_DIR, model_slug)
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(result_dir, exist_ok=True)
@@ -293,6 +293,11 @@ def parse_args():
     parser.add_argument("--weight_decay", type=float, default=0.01,  help="AdamW weight decay")
     parser.add_argument("--max_length",   type=int,   default=256,   help="Max token length (texts avg ~80 tokens)")
     parser.add_argument("--patience",     type=int,   default=5,     help="Early stopping patience (epochs)")
+    parser.add_argument(
+        "--outputs_dir", type=str,
+        default=os.environ.get("OUTPUTS_DIR", os.path.join(ROOT, "outputs")),
+        help="Base directory for training checkpoints (use scratch to avoid quota issues)",
+    )
 
     return parser.parse_args()
 
