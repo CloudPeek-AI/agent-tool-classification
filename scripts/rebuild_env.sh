@@ -31,13 +31,16 @@ echo "  Rebuilding conda env at: ${TEACHER_ENV}"
 echo "  Python                 : ${PYTHON_VERSION}"
 echo "========================================================================"
 
-# ── 2. Free home-dir quota: remove stale Cargo cache (caused quota failure) ───
-STALE_CARGO="${HOME}/.cache/puccinialin/cargo"
-if [ -d "${STALE_CARGO}" ]; then
-    echo "[1/5] Removing stale cargo cache from home (~/.cache/puccinialin/cargo)..."
-    rm -rf "${STALE_CARGO}"
+# ── 2. Free home-dir quota: remove maturin's cache (puccinialin) from home ────
+# maturin installs its own Rust toolchain under XDG_CACHE_HOME/puccinialin/,
+# ignoring CARGO_HOME. Wipe what's already there, then redirect XDG_CACHE_HOME
+# to scratch so future builds go there instead.
+STALE_MATURIN="${HOME}/.cache/puccinialin"
+if [ -d "${STALE_MATURIN}" ]; then
+    echo "[1/5] Removing stale maturin/cargo cache from home (~/.cache/puccinialin)..."
+    rm -rf "${STALE_MATURIN}"
 else
-    echo "[1/5] No stale cargo cache found in home, skipping."
+    echo "[1/5] No stale maturin cache found in home, skipping."
 fi
 
 # ── 3. Remove old env ──────────────────────────────────────────────────────────
@@ -65,12 +68,14 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 # ── 6. Install all project dependencies ───────────────────────────────────────
 echo "[5/5] Installing project dependencies..."
 
-# Redirect Cargo/Rust build caches to scratch so they don't exhaust the
-# home-directory quota. vllm pulls in llguidance which builds with maturin/Rust.
-export CARGO_HOME="${CARGO_HOME:-${SCRATCH_CACHE}/cargo}"
-export RUSTUP_HOME="${RUSTUP_HOME:-${SCRATCH_CACHE}/rustup}"
-mkdir -p "${CARGO_HOME}" "${RUSTUP_HOME}"
-echo "      CARGO_HOME=${CARGO_HOME}"
+# maturin uses XDG_CACHE_HOME/puccinialin/ for its own Rust toolchain + cargo
+# registry — it ignores CARGO_HOME. Redirect XDG_CACHE_HOME to scratch so
+# vllm's llguidance build doesn't exhaust the home-dir quota.
+export XDG_CACHE_HOME="${SCRATCH_CACHE}"
+export CARGO_HOME="${SCRATCH_CACHE}/cargo"
+export RUSTUP_HOME="${SCRATCH_CACHE}/rustup"
+mkdir -p "${XDG_CACHE_HOME}" "${CARGO_HOME}" "${RUSTUP_HOME}"
+echo "      XDG_CACHE_HOME=${XDG_CACHE_HOME}"
 
 pip install \
     "transformers>=4.40.0" \
