@@ -17,8 +17,8 @@ export PYTHONUTF8=1
 # FlashInfer JIT-compiles CUDA kernels with -std=c++20. If the default system GCC
 # is too old to support C++20, nvcc silently drops the flag and libcu++ fails with
 # "requires at least C++17". Load a newer GCC (>=11) to fix this.
-# Override via env (MODULE_GCC= to skip): MODULE_GCC=gcc/<ver> scripts/submit_vllm.sh coder-next
-: "${MODULE_GCC=gcc/14.3.0}"
+# Override via env: MODULE_GCC=gcc/14.3.0 scripts/submit_vllm.sh coder-next
+: "${MODULE_GCC:=}"
 : "${TEACHER_ENV:=/storage/hpc/41/dolamull/envs/teacher}"   # conda env name or -p prefix path
 
 # `source /etc/profile` makes the `module` command available in a non-interactive
